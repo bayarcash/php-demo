@@ -30,6 +30,15 @@ class Bayarcash
     const QRISOB = 9;
     const QRISWALLET = 10;
     const NETS = 11;
+    const CREDIT_CARD = 12;
+    const ALIPAY = 13;
+    const WECHATPAY = 14;
+    const PROMPTPAY = 15;
+    const TOUCH_N_GO = 16;
+    const BOOST_WALLET = 17;
+    const GRABPAY = 18;
+    const GRABPL = 19;
+    const SHOPEE_PAY = 21;
 
     /**
      * The Bayarcash API Key.
@@ -293,6 +302,25 @@ class Bayarcash
             $this
         );
     }
+
+	/**
+	 * Cancel payment intent.
+	 *
+	 * @param  string  $paymentIntentId
+	 * @return \Webimpian\BayarcashSdk\Resources\PaymentIntentResource
+	 * @throws \Exception If the API version is not v3
+	 */
+	public function cancelPaymentIntent(string $paymentIntentId)
+	{
+		if ($this->apiVersion !== 'v3') {
+			throw new \Exception('The getPaymentIntent method is only available for API version v3.');
+		}
+
+		return new PaymentIntentResource(
+			$this->delete('payment-intents/' . $paymentIntentId),
+			$this
+		);
+	}
 
     /**
      * Get all transactions with optional filters.

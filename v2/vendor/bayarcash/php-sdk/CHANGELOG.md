@@ -2,6 +2,30 @@
 
 All notable changes to will be documented in this file.
 
+## 2.1.2 - 2026-02-03
+### Changed
+- Refactored checksum generation:
+  - `payment_channel` can now be omitted, null, an integer, or an array of integers.
+  - Payment channels are normalized to a comma-separated string before checksum calculation.
+  - Payload sorting and HMAC-SHA256 hash generation remain the same.
+
+## 2.1.1 - 2026-01-28
+### Added
+- Add toArray() method to convert Resource instances to array format with support for nested Resource objects and arrays of Resources.
+
+## 2.1.0 - 2026-01-26
+### Added
+- Added new Payment Intent features:
+  - `cancelPaymentIntent` method to cancel payment intent
+
+## 2.0.6 - 2025-11-10
+### Added
+- Add TOUCH_N_GO, BOOST_WALLET, GRABPAY, GRABPL, and SHOPEE_PAY payment channel id.
+
+## 2.0.5 - 2025-07-29
+### Added
+- Add CREDIT_CARD, ALIPAY,PROMPTPAY and WECHATPAY payment channel id.
+
 ## 2.0.4 - 2025-04-29
 ### Added
 - Added helper to submit manual transfers to Bayarcash.
