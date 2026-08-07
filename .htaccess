@@ -1,0 +1,29 @@
+# Only needed when the document root is the repository root.
+#
+# It rewrites everything into public/ so that directory never appears in a URL.
+# If you can set the document root to public/ instead -- Apache DocumentRoot,
+# or RunCloud's "Public Path" -- do that and delete this file.
+#
+# The old-link redirects live in public/.htaccess, so they work either way.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # ------------------------------------------------------------------
+    # Serve from public/ without exposing it.
+    #
+    # The condition stops the rule rewriting its own output into
+    # public/public/... on the next pass.
+    # ------------------------------------------------------------------
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Never serve the credentials or the database, whatever the rewrite does.
+<FilesMatch "^(config\.php|config-v1\.php|config-v2\.php|composer\.(json|lock))$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
