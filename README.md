@@ -3,12 +3,13 @@
 A vanilla PHP demo of the [Bayarcash](https://bayarcash.com) payment gateway, built on
 [`bayarcash/php-sdk`](https://github.com/bayarcash/php-sdk). No framework.
 
-Two ways in, depending on what you need:
+Three ways in, depending on what you need:
 
 | | |
 |---|---|
 | **`guide/`** | Short scripts you **read**. One SDK call each, heavily commented. |
-| **`public/`** | A working checkout you **run** end to end. |
+| **Checkout** | A working payment you **run** end to end. |
+| **API console** | Call any SDK operation and read the raw response. |
 
 ## Getting started
 
@@ -34,22 +35,25 @@ Get sandbox credentials from the [Bayarcash console](https://console.bayarcash-s
 This is the whole integration, and the demo is organised around it:
 
 ```
-  index.php                  createPaymentIntent()  ->  redirect payer
+  index.php                 createPaymentIntent()  ->  redirect payer
       |
       v
-  Bayarcash checkout         payer picks a bank and pays
+  Bayarcash checkout        payer picks a bank and pays
       |
-      +---> callback.php     server-to-server. Authoritative. Always fires.
-      |                      Verify checksum -> record status -> answer 200.
+      +---> callback.php    server to server. Always fires, even if the
+      |                     payer closes the browser. Retried until you
+      |                     answer 200.
       |
-      +---> return.php       payer's browser lands here. Cosmetic.
-                             Reads what the callback recorded. Never writes.
+      +---> return.php      the payer's browser lands here. Instant, but
+                            never fires if they close the tab at the bank.
 ```
 
-**The one rule worth internalising:** payment status comes from `callback.php`,
-never from `return.php`. The payer can close their browser, lose signal, or
-never come back — the callback still arrives. Anything that depends on the
-browser returning will eventually lose a payment.
+Both record the result, covering each other: the callback survives a closed
+browser, the return URL survives a callback that is delayed or blocked.
+
+They share one write path, so whichever arrives second is ignored rather than
+overwriting the first — and neither writes anything until the checksum
+verifies. Each stores the payload it received, so you can compare them.
 
 ### Status codes
 
@@ -62,8 +66,7 @@ browser returning will eventually lose a payment.
 | 4 | Cancelled | final |
 | 5 | Expired | final |
 
-Defined once in `src/PaymentStatus.php`. Once a transaction reaches a final
-status, later callbacks must not move it.
+Defined once in `src/PaymentStatus.php`. A final status never changes.
 
 ## The guide
 
@@ -85,16 +88,25 @@ php guide/01-create-payment-intent.php
 ## Layout
 
 ```
-guide/       read these to learn the SDK
-public/      the runnable demo
-  index.php      checkout
-  callback.php   webhook -- the only writer of status
-  return.php     browser landing -- read only
-  orders.php     what the callbacks recorded
-  internal/      direct-API tooling
-src/         Config, Db, BayarcashFactory, PaymentStatus, TransactionRepository
-config.php   your credentials (gitignored)
+guide/                 read these to learn the SDK
+public/                everything served to the browser
+  index.php              checkout
+  callback.php           webhook — server to server
+  return.php             browser landing, with both raw payloads
+  orders.php             what has been recorded, plus the log
+  api-console.php        call any SDK operation, see the raw response
+  assets/                css and images
+  internal/              team tooling, talks to the API directly (no SDK)
+    dev.php                test form
+    return_dev.php         dev browser landing
+    callback_dev.php       dev webhook — not gated, verified by checksum
+src/                   Config, Db, BayarcashFactory, PaymentStatus,
+                       TransactionRepository, Log
+storage/               SQLite file and demo.log (gitignored)
+config.php             your credentials (gitignored)
 ```
+
+`internal/` only exists where a `dev` environment is configured.
 
 ## Database
 
@@ -111,8 +123,57 @@ SQLite by default, with nothing to install. To use MySQL, change one word in
 ],
 ```
 
-Tables are created automatically either way. The two engines differ in exactly
-two places, both isolated in `src/Db.php`.
+Tables are created automatically either way.
+
+## Deployment
+
+The app is served from `public/`. Two ways to do that:
+
+**Set the document root to `public/`** — cleanest. Apache `DocumentRoot`,
+nginx `root`, or RunCloud's **Public Path**:
+
+```
+Root Path:    /home/you/webapps/app
+Public Path:  /home/you/webapps/app/public
+```
+
+Then delete the root `.htaccess`; it exists only for the other case.
+
+**Or leave the document root at the repository root** and let the bundled
+root `.htaccess` rewrite into `public/`.
+
+Nothing appears in the URL either way. Old links keep working under both,
+because those redirects live in `public/.htaccess`:
+
+| Old URL | Goes to |
+|---|---|
+| `/v2/` | `/` |
+| `/v2/index.php` | `/index.php` |
+| `/v2/return.php` | `/return.php` |
+| `/v2/listorder.php` | `/orders.php` |
+| `/v2/check.php` | `/api-console.php` |
+| `/v2/dev.php` | `/internal/dev.php` |
+| `/v2/return_dev.php` | `/internal/return_dev.php` |
+| `/v1/…` | `/` |
+
+All 301s, so bookmarks and search engines follow permanently.
+
+Either way `base_url` in `config.php` is the bare domain — **not** `/public/`:
+
+```php
+'base_url' => 'https://your-domain.com/',
+```
+
+Get that wrong and Bayarcash posts callbacks to a 404 while checkout still
+appears to work. After deploying, check it:
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" https://your-domain.com/callback.php
+# 405 = reachable and correct (it only accepts POST).  404 = base_url is wrong.
+```
+
+> On nginx there is no `.htaccess`. Set the root to `public/` and add the
+> redirects as `location` blocks.
 
 ## Links
 

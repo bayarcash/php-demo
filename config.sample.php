@@ -7,9 +7,8 @@
  */
 
 return [
-    // Public URL of the public/ directory, with a trailing slash. Bayarcash
-    // sends callbacks here, so it must be reachable from the internet -- use
-    // a tunnel (ngrok, Expose, Herd share) when developing locally.
+    // Public URL of the site, with a trailing slash -- not /public/.
+    // Callbacks are sent here, so it must be reachable from the internet.
     //
     // Leave it out entirely and the demo guesses from the current request,
     // which is fine on localhost but not in production.

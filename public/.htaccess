@@ -1,0 +1,34 @@
+# Applies whether this directory is the document root (RunCloud "Public Path",
+# Apache DocumentRoot) or the root .htaccess rewrites into it.
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Old links from the previous layout. 301 so bookmarks and search engines
+    # follow permanently.
+    #
+    # dev.php and return_dev.php did not simply move to the root -- they are
+    # under internal/ now -- so they are matched before the general rule.
+    RewriteRule ^v2/dev\.php$        /internal/dev.php        [R=301,L]
+    RewriteRule ^v2/return_dev\.php$ /internal/return_dev.php [R=301,L]
+
+    RewriteRule ^v2/checkout\.php$   /                        [R=301,L]
+    RewriteRule ^v2/listorder\.php$  /orders.php              [R=301,L]
+    RewriteRule ^v2/check\.php$      /api-console.php         [R=301,L]
+
+    RewriteRule ^v2/?$               /                        [R=301,L]
+    RewriteRule ^v2/(.*)$           /$1                       [R=301,L]
+
+    # v1 is gone.
+    RewriteRule ^v1(/.*)?$           /                        [R=301,L]
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+# storage/ and config.php sit above this directory and are already out of
+# reach. This only guards against a document root set too high.
+<FilesMatch "\.(sqlite|log)$">
+    Require all denied
+</FilesMatch>
