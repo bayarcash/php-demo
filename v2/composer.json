@@ -1,8 +1,0 @@
-{
-    "require": {
-        "ext-pdo": "*",
-      "ext-curl": "*",
-      "ext-json": "*",
-        "bayarcash/php-sdk": "^2.2"
-    }
-}

@@ -1,3 +1,14 @@
-config-v1.php
-config-v2.php
-/.idea
+# Credentials — never commit these.
+/config.php
+/config-v1.php
+/config-v2.php
+
+# Runtime data: the SQLite file and the demo log.
+/storage/*
+!/storage/.gitkeep
+
+/.idea/
+.DS_Store
+
+# vendor/ is intentionally committed so the demo can be deployed by git pull
+# alone, without running composer on the server.
