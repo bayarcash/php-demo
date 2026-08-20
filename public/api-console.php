@@ -21,6 +21,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/_layout.php';
 
+use Bayarcash\Bayarcash;
 use BayarcashDemo\BayarcashFactory;
 
 $bayarcash   = BayarcashFactory::make($config);
@@ -37,6 +38,20 @@ $samplePayment = json_encode([
     'payer_telephone_number' => '60123456789',
 ], JSON_PRETTY_PRINT);
 
+// createDuitNowQrPaymentIntent() sets generate_qr itself; it is spelled out here
+// because this page posts the body as typed rather than calling the method.
+$sampleDuitNowQr = json_encode([
+    'portal_key'             => $portalKey,
+    'order_number'           => 'QR' . date('ymdHis'),
+    'amount'                 => '10.00',
+    'description'            => 'DuitNow QR console test',
+    'payer_name'             => 'John Doe',
+    'payer_email'            => 'john.doe@example.com',
+    'payer_telephone_number' => '60123456789',
+    'payment_channel'        => Bayarcash::DUITNOW_QR,
+    'generate_qr'            => true,
+], JSON_PRETTY_PRINT);
+
 /**
  * The SDK's operations. Each names its own parameter, because they are not
  * all ids -- some take a status, an email, a channel. `body` marks the ones
@@ -45,6 +60,13 @@ $samplePayment = json_encode([
 $operations = [
     'portals' => ['GET', 'portals', 'getPortals()'],
     'banks'   => ['GET', 'banks',   'fpxBanksList()'],
+
+    'portal' => ['GET', 'portals/{p}', 'getPortal($portalId)', 'v3' => true,
+        'param' => 'Portal ID', 'hint' => 'an id from getPortals()'],
+
+    'dobw-banks' => ['GET', 'duitnow/dobw/banks', 'duitNowDobwBanksList()', 'v3' => true],
+
+    'server-status' => ['GET', 'up', 'getServerStatus()', 'v3' => true],
 
     'transactions' => ['GET', 'transactions', 'getAllTransactions()'],
 
@@ -71,8 +93,21 @@ $operations = [
 
     'create-payment' => ['POST', 'payment-intents', 'createPaymentIntent($data)', 'body' => true],
 
+    'create-duitnow-qr' => ['POST', 'payment-intents', 'createDuitNowQrPaymentIntent($data)',
+        'body' => true, 'v3' => true, 'sample' => 'duitnow_qr'],
+
+    'regenerate-qr' => ['POST', 'payment-intents/{p}/duitnow-qr', 'regenerateDuitNowQr($id)',
+        'v3' => true, 'param' => 'Payment intent ID', 'hint' => 'pi_…'],
+
+    'qr-status' => ['GET', 'transactions/{p}/duitnow-qr/status', 'getDuitNowQrStatus($transactionId)',
+        'v3' => true, 'param' => 'Transaction ID', 'hint' => 'trx_…'],
+
     'cancel-payment' => ['DELETE', 'payment-intents/{p}', 'cancelPaymentIntent($id)',
         'param' => 'Payment intent ID', 'hint' => 'pi_…'],
+
+    'mandates' => ['GET', 'mandates', 'getAllFpxDirectDebits()', 'v3' => true],
+
+    'mandate-txns' => ['GET', 'mandates/transactions', 'getAllFpxDirectDebitTransactions()', 'v3' => true],
 
     'mandate' => ['GET', 'mandates/{p}', 'getFpxDirectDebit($id)',
         'param' => 'Mandate ID', 'hint' => 'mdt_…'],
@@ -87,6 +122,18 @@ $operations = [
 
     'terminate-mandate' => ['DELETE', 'mandates/{p}', 'createFpxDirectDebitTermination($id, $data)',
         'param' => 'Mandate ID', 'hint' => 'mdt_…', 'body' => true],
+
+    'activate-mandate' => ['PATCH', 'mandates/{p}/activate', 'activateFpxDirectDebit($id)',
+        'v3' => true, 'param' => 'Mandate ID', 'hint' => 'mdt_…'],
+
+    'deactivate-mandate' => ['PATCH', 'mandates/{p}/deactivate', 'deactivateFpxDirectDebit($id)',
+        'v3' => true, 'param' => 'Mandate ID', 'hint' => 'mdt_…'],
+];
+
+// Sample bodies by name, so an operation can ask for the one that fits it.
+$samples = [
+    'default'    => $samplePayment,
+    'duitnow_qr' => $sampleDuitNowQr,
 ];
 
 // GET prefills let other pages deep-link into a specific lookup.
@@ -110,6 +157,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send'])) {
     $paramLabel   = $op['param'] ?? null;
 
     try {
+        if (! empty($op['v3']) && $config->apiVersion() !== 'v3') {
+            throw new RuntimeException(
+                $op[2] . ' is only available on API v3. Set api_version to v3 in config.php.'
+            );
+        }
+
         if ($paramLabel !== null && $resourceId === '') {
             throw new RuntimeException($paramLabel . ' is required for this operation.');
         }
@@ -165,7 +218,9 @@ layout_head('API console', $config, 'api-console.php');
                             data-param="<?= e($op['param'] ?? '') ?>"
                             data-hint="<?= e($op['hint'] ?? '') ?>"
                             data-body="<?= empty($op['body']) ? '' : '1' ?>"
-                        <?= $selected === $key ? 'selected' : '' ?>>
+                            data-sample="<?= e($samples[$op['sample'] ?? 'default']) ?>"
+                        <?= $selected === $key ? 'selected' : '' ?>
+                        <?= ! empty($op['v3']) && $config->apiVersion() !== 'v3' ? 'disabled' : '' ?>>
                         <?= e($op[2]) ?>
                     </option>
                 <?php endforeach; ?>
@@ -187,7 +242,7 @@ layout_head('API console', $config, 'api-console.php');
         <div class="field" id="field-body" hidden>
             <label for="payload">Request body</label>
             <textarea class="input" id="payload" name="payload" rows="9"
-                      placeholder="{}"><?= e($payload !== '' ? $payload : $samplePayment) ?></textarea>
+                      placeholder="{}"><?= e($payload !== '' ? $payload : $samples[$operations[$selected]['sample'] ?? 'default']) ?></textarea>
         </div>
 
         <button class="btn btn-primary" type="submit" name="send" value="1">Send →</button>
@@ -234,6 +289,7 @@ layout_head('API console', $config, 'api-console.php');
     const paramLbl  = document.getElementById('param-label');
     const paramIn   = document.getElementById('resource_id');
     const bodyWrap  = document.getElementById('field-body');
+    const payload   = document.getElementById('payload');
     const endpoint  = document.getElementById('endpoint');
 
     function syncFields() {
@@ -258,6 +314,13 @@ layout_head('API console', $config, 'api-console.php');
     // the round trip, because this only fires on user input.
     op.addEventListener('change', () => {
         paramIn.value = '';
+
+        // A DuitNow QR body is not an FPX body, so the sample follows the operation.
+        const sample = op.selectedOptions[0].dataset.sample || '';
+        if (sample) {
+            payload.value = sample;
+        }
+
         syncFields();
     });
 

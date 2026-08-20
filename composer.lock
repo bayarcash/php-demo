@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "bayarcash/php-sdk",
-            "version": "v3.0.0",
+            "version": "v3.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/bayarcash/php-sdk.git",
-                "reference": "86a7deed1ebf2e7ff90b532bb86fe676cb18f877"
+                "reference": "fee736fa3a003ac10e034788898f6add7070d23e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/bayarcash/php-sdk/zipball/86a7deed1ebf2e7ff90b532bb86fe676cb18f877",
-                "reference": "86a7deed1ebf2e7ff90b532bb86fe676cb18f877",
+                "url": "https://api.github.com/repos/bayarcash/php-sdk/zipball/fee736fa3a003ac10e034788898f6add7070d23e",
+                "reference": "fee736fa3a003ac10e034788898f6add7070d23e",
                 "shasum": ""
             },
             "require": {
@@ -58,9 +58,9 @@
             "description": "Bayarcash payment gateway PHP Sdk.",
             "support": {
                 "issues": "https://github.com/bayarcash/php-sdk/issues",
-                "source": "https://github.com/bayarcash/php-sdk/tree/v3.0.0"
+                "source": "https://github.com/bayarcash/php-sdk/tree/v3.1.0"
             },
-            "time": "2026-07-21T22:28:30+00:00"
+            "time": "2026-08-20T11:58:08+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",

@@ -224,6 +224,17 @@ body {
     background: var(--pine);
 }
 
+/* An outbound tab is marked, so leaving the demo is never a surprise. */
+.nav a.nav-out::after {
+    content: '\2197';
+    font-size: .8em;
+    margin-left: .25rem;
+    vertical-align: text-top;
+    opacity: .55;
+}
+
+.nav a.nav-out:hover::after { opacity: 1; }
+
 @media (min-width: 700px) { .nav { margin-bottom: 2.5rem; } }
 
 /* ---------- panels ---------- */

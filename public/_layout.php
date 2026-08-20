@@ -45,6 +45,9 @@ function layout_head(string $title, Config $config, string $current = ''): void
         foreach ($links as $href => $label): ?>
             <a href="<?= e($href) ?>" <?= $current === $href ? 'aria-current="page"' : '' ?>><?= e($label) ?></a>
         <?php endforeach; ?>
+
+        <?php // DuitNow QR has its own proof-of-concept app, so this tab leaves the demo. ?>
+        <a href="https://poc.scanbayar.com/" class="nav-out" target="_blank" rel="noopener">DuitNow QR</a>
     </nav>
 
     <main>
